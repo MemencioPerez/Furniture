@@ -2,7 +2,6 @@ package com.berksire.furniture.client.render;
 
 import com.berksire.furniture.block.FishTankBlock;
 import com.berksire.furniture.block.entity.FishTankBlockEntity;
-import com.berksire.furniture.client.entity.FakeFishTankEntity;
 import com.berksire.furniture.client.model.FishTankModel;
 import com.berksire.furniture.registry.ObjectRegistry;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -11,52 +10,40 @@ import com.mojang.math.Axis;
 import dev.architectury.fluid.FluidStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.material.Fluids;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 
-public class FishTankRenderer extends EntityRenderer<FakeFishTankEntity> {
-
-    private final FishTankModel model;
+public class FishTankRenderer implements BlockEntityRenderer<FishTankBlockEntity> {
     private static final ResourceLocation NORMAL_TEXTURE = new ResourceLocation("furniture", "textures/entity/copper_fish_tank.png");
     private static final ResourceLocation IRON_TEXTURE = new ResourceLocation("furniture", "textures/entity/iron_fish_tank.png");
+    private final FishTankModel model;
 
-    public FishTankRenderer(EntityRendererProvider.Context context) {
-        super(context);
+    public FishTankRenderer(BlockEntityRendererProvider.Context context) {
         this.model = new FishTankModel(context.bakeLayer(FishTankModel.LAYER_LOCATION));
     }
 
-    private static boolean assertNonNullOrPop(Object nullable, PoseStack stack) {
-        if (nullable == null) {
-            stack.popPose();
-            return true;
-        } else return false;
-    }
-
     @Override
-    public void render(FakeFishTankEntity entity, float f, float g, PoseStack poseStack, MultiBufferSource bufferSource, int combinedLight) {
-        poseStack.pushPose();
-        FishTankBlockEntity blockEntity = entity.getNearestTankEntity().orElse(null);
-        if (assertNonNullOrPop(blockEntity, poseStack)) return;
-
-        assert blockEntity != null;
+    public void render(FishTankBlockEntity blockEntity, float f, PoseStack poseStack, MultiBufferSource buffers, int light, int overlay) {
+        // Only render once
         boolean isFoot = blockEntity.getBlockState().getValue(FishTankBlock.PART) == BedPart.FOOT;
-        if (!isFoot) {
-            poseStack.popPose();
-            return;
-        }
+        if (!isFoot) return;
 
-        Direction direction = blockEntity.getBlockState().getValue(FishTankBlock.FACING);
-        float rotation = -direction.toYRot();
-        Quaternionf theGreatRotator = new Quaternionf().rotateY((float) Math.toRadians(rotation - 90));
-        poseStack.mulPose(theGreatRotator);
+        poseStack.pushPose();
+
+        poseStack.translate(0.5, 0, 0.5);
+
+        Quaternionf rotationCorrector = Axis.YN.rotationDegrees(
+                blockEntity.getBlockState().getValue(FishTankBlock.FACING).toYRot()
+        );
+        poseStack.mulPose(rotationCorrector);
+        poseStack.mulPose(Axis.YN.rotationDegrees(90));
 
         poseStack.mulPose(Axis.XP.rotationDegrees(180));
 
@@ -66,57 +53,51 @@ public class FishTankRenderer extends EntityRenderer<FakeFishTankEntity> {
         } else {
             texture = NORMAL_TEXTURE;
         }
-        VertexConsumer vertexConsumer = bufferSource.getBuffer(model.renderType(texture));
+        VertexConsumer vertexConsumer = buffers.getBuffer(model.renderType(texture));
 
-        Level world = Minecraft.getInstance().level;
-        if (assertNonNullOrPop(world, poseStack)) return;
+        Level world = blockEntity.getLevel();
         assert world != null;
         float renderTick = (world.getGameTime() % 24000L) + Minecraft.getInstance().getFrameTime();
-        this.model.setupAnim(entity, f, g, renderTick, 0.0F, 0.0F);
+        this.model.setupAnim(blockEntity, renderTick);
 
         if (blockEntity.getBlockState().getValue(FishTankBlock.HAS_COD)) {
-            this.model.cod_1.render(poseStack, vertexConsumer, combinedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-            this.model.cod_2.render(poseStack, vertexConsumer, combinedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-            this.model.cod_3.render(poseStack, vertexConsumer, combinedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-            this.model.cod_4.render(poseStack, vertexConsumer, combinedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            this.model.cod_1.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            this.model.cod_2.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            this.model.cod_3.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            this.model.cod_4.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
         }
 
         if (blockEntity.getBlockState().getValue(FishTankBlock.HAS_PUFFERFISH)) {
             poseStack.pushPose();
             poseStack.translate(0.5, -0.6, 0);
-            this.model.pufferfish_1.render(poseStack, vertexConsumer, combinedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            this.model.pufferfish_1.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
             poseStack.popPose();
 
             poseStack.pushPose();
             poseStack.translate(0.9, -0.8, 0.1);
-            this.model.pufferfish_2.render(poseStack, vertexConsumer, combinedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            this.model.pufferfish_2.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
             poseStack.popPose();
         }
 
         if (blockEntity.getBlockState().getValue(FishTankBlock.HAS_SALMON)) {
             poseStack.pushPose();
             poseStack.translate(0, 0, 0.05);
-            this.model.salmon_1.render(poseStack, vertexConsumer, combinedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            this.model.salmon_1.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
             poseStack.popPose();
-            this.model.salmon_2.render(poseStack, vertexConsumer, combinedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            this.model.salmon_2.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
         }
 
-        this.model.tank.render(poseStack, vertexConsumer, combinedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-        this.model.decoration.render(poseStack, vertexConsumer, combinedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        this.model.tank.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        this.model.decoration.render(poseStack, vertexConsumer, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
 
         poseStack.popPose();
         poseStack.pushPose();
 
-        poseStack.mulPose(theGreatRotator);
-        poseStack.mulPose(new Quaternionf().rotateY((float) Math.toRadians(90)));
+        poseStack.translate(0.5, 0, 0.5);
+        poseStack.mulPose(rotationCorrector);
         poseStack.translate(-0.5, 0, -0.5);
-        FluidRenderer.renderFluidBox(FluidStack.create(Fluids.WATER, 100L), 1f / 16 + 1f / 128, 2f / 16, 1f / 16 + 1f / 128, 15f / 16 - 1f / 128, 13.6f / 16, 31f / 16 - 1f / 128, bufferSource, poseStack, combinedLight, false);
 
+        FluidRenderer.renderFluidBox(FluidStack.create(Fluids.WATER, 100L), 1f / 16 + 1f / 128, 2f / 16, 1f / 16 + 1f / 128, 15f / 16 - 1f / 128, 13.6f / 16, 31f / 16 - 1f / 128, buffers, poseStack, light, false);
         poseStack.popPose();
-    }
-
-    @Override
-    public @NotNull ResourceLocation getTextureLocation(FakeFishTankEntity entity) {
-        return NORMAL_TEXTURE;
     }
 }

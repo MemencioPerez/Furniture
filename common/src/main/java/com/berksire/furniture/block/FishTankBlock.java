@@ -135,7 +135,7 @@ public class FishTankBlock extends BaseEntityBlock implements EntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState blockState, BlockEntityType<T> blockEntityType) {
-        return createTickerHelper(blockEntityType, EntityTypeRegistry.FISH_TANK_BLOCK_ENTITY.get(), (level1, pos, state, blockEntity) -> FishTankBlockEntity.tick(level1, pos, blockEntity));
+        return createTickerHelper(blockEntityType, EntityTypeRegistry.FISH_TANK_BLOCK_ENTITY.get(), (level1, pos, state, blockEntity) -> blockEntity.tick(level1, pos, state, blockEntity));
     }
 
     private static VoxelShape rotate(VoxelShape shape, Direction originalDir, Direction newDir) {
