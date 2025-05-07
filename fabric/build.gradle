@@ -31,7 +31,15 @@ dependencies {
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
 
-    modImplementation("com.lowdragmc.shimmer:Shimmer-fabric:${rootProject.minecraft_version}-${rootProject.shimmer_version}")
+    // Iris compat
+    modImplementation("maven.modrinth:iris:1.7.6+1.20.1")
+    modImplementation("maven.modrinth:sodium:mc1.20.1-0.5.12-beta.2-fabric")
+    // Normally included in iris
+    runtimeOnly("org.anarres:jcpp:1.4.14")
+    runtimeOnly("io.github.douira:glsl-transformer:2.0.2")
+    // Necessary to mixin into mixins
+    include(implementation(annotationProcessor("com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.3.2-beta.3")))
+    include(modImplementation(annotationProcessor("io.github.llamalad7:mixinextras-fabric:0.4.1")))
 }
 
 processResources {

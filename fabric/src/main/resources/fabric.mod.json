@@ -22,14 +22,12 @@
     ]
   },
   "mixins": [
-    "furniture-common.mixins.json"
+    "furniture-common.mixins.json",
+    "furniture-fabric.mixins.json"
   ],
   "depends": {
     "fabric": "*",
     "minecraft": ">=1.20.1",
     "architectury": ">=6.5.77"
-  },
-  "suggests": {
-    "shimmer": "*"
   }
 }
